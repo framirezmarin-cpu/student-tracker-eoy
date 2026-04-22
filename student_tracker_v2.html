@@ -330,10 +330,13 @@ async function loadFromSheets(){
     if(!rosterRows.length){students=[];setSyncStatus('synced','Synced');populateFilters();renderList();renderStats();return;}
     
     // Skip header row if present (check if first cell looks like a header)
-    // Skip header row: if first column of row 0 is non-numeric, treat as header
-    const firstVal=(rosterRows[0][0]||'').toString().trim();
-    const isHeader=isNaN(firstVal)||firstVal==='';
-    const startIdx=isHeader?1:0;
+    // Skip ALL leading non-numeric rows (handles multiple header rows)
+    let startIdx=0;
+    for(let i=0;i<Math.min(rosterRows.length,5);i++){
+      const v=(rosterRows[i][0]||'').toString().trim();
+      if(!isNaN(v)&&v!==''){startIdx=i;break;}
+      startIdx=i+1;
+    }
     const dataRows=rosterRows.slice(startIdx).filter(r=>r[0]||r[1]);
 
     // Read tracking data from Tracking sheet
