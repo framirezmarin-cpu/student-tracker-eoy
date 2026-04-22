@@ -354,9 +354,8 @@ async function loadFromSheets(){
       const id=(row[0]||'').toString().trim();
       const last=(row[1]||'').trim();
       const first=(row[2]||'').trim();
-      // row[3] = DOB (skip)
-      const school=(row[4]||'').trim();
-      const grade=normGrade((row[5]||'').toString().trim());
+      const school=(row[3]||'').trim();
+      const grade=normGrade((row[4]||'').toString().trim());
       const existing=trackingMap[id]||{};
       let data=existing.data||{};
       // ensure all grade-appropriate categories exist
