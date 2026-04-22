@@ -780,7 +780,7 @@ function runExport(){
   const hdr=[...base,...schema.headers];
   const rows=filtered.map(s=>{
     const st=getStatus(s)==='complete'?'Complete':getStatus(s)==='partial'?'In Progress':'Not Started';
-    return[...,[s.last,s.first,s.id,glabel(s.grade),s.school,st],...schema.get(s)].map(v=>'"'+(v||'')+'"').join(',');
+    const rowData=[s.last,s.first,s.id,glabel(s.grade),s.school,st].concat(schema.get(s));return rowData.map(v=>'"'+(v||'')+'"').join(',');
   });
   const csv=[hdr.map(h=>'"'+h+'"').join(','),...rows].join('\n');
   const sch=(document.getElementById('expSchool').value||'all').replace(/\s+/g,'_');
