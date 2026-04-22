@@ -129,7 +129,7 @@ tr.clickable:hover td{background:#fafaf8;cursor:pointer}
         <option value="none">Not started</option>
       </select>
       <button class="btn" onclick="openImport()">⬆ Import CSV</button>
-      <button class="btn" onclick="exportCSV()">⬇ Export CSV</button>
+      <button class="btn" onclick="openExport()">⬇ Export CSV</button>
       <button class="btn btn-primary" onclick="openAdd()">+ Add student</button>
     </div>
     <div class="table-card"><div class="table-wrap">
@@ -192,6 +192,54 @@ tr.clickable:hover td{background:#fafaf8;cursor:pointer}
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('importModal')">Cancel</button>
       <button class="btn btn-primary" id="importBtn" onclick="confirmImport()" disabled>Import students</button>
+    </div>
+  </div>
+</div>
+
+<!-- Smart Export Modal -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal" style="width:520px">
+    <div class="modal-title">Export students</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:1.25rem">Choose your filters and what to include in the export.</p>
+    
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+      <div class="mfield"><label>School</label>
+        <select id="expSchool"><option value="">All schools</option></select>
+      </div>
+      <div class="mfield"><label>Grade</label>
+        <select id="expGrade"><option value="">All grades</option></select>
+      </div>
+    </div>
+
+    <div class="mfield"><label>Category focus</label>
+      <select id="expCat">
+        <option value="">All categories</option>
+        <option value="lpac">LPAC only</option>
+        <option value="teacherEval">Teacher Evaluation only</option>
+        <option value="reclass">Reclassification only</option>
+        <option value="changeProgram">Change of Program Letter only</option>
+        <option value="iowa">Iowa Testing only</option>
+        <option value="eng1">English I Provision only</option>
+      </select>
+    </div>
+
+    <div class="mfield"><label>Completion status</label>
+      <select id="expStatus">
+        <option value="">All students</option>
+        <option value="none">Not started only</option>
+        <option value="partial">In progress only</option>
+        <option value="complete">Complete only</option>
+        <option value="incomplete">Not complete (not started + in progress)</option>
+      </select>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--text2);margin-bottom:1rem" id="expPreview">
+      Select filters above to see how many students match.
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('exportModal')">Cancel</button>
+      <button class="btn btn-primary" id="expBtn" onclick="runExport()">Export CSV</button>
     </div>
   </div>
 </div>
@@ -679,16 +727,70 @@ async function confirmImport(){
 }
 
 // ── EXPORT ────────────────────────────────────────────────────────────────────
-function exportCSV(){
-  const hdr=['Last Name','First Name','ID','Grade','School','LPAC Type','LPAC Date','LPAC PELL','BOY Done','MOY Done','STAAR Rec','TELPAS Rec','MOY Accommodations','EOY Done','EOY Docs','Teacher Eval Created','Teacher Eval Submitted','Reclass Qualifies','Reclass Docs','Change Program Received','Change Program Uploaded','Iowa Qualifies','Iowa Completed','Iowa Results','Eng1 Qualifies','Eng1 Taken','Eng1 Uploaded'];
-  const rows=students.map(s=>{
-    const lp=s.data.lpac||{},boy=lp.boy||{},moy=lp.moy||{},eoy=lp.eoy||{};
-    const te=s.data.teacherEval||{},rc=s.data.reclass||{},cp=s.data.changeProgram||{},iw=s.data.iowa||{},e1=s.data.eng1||{};
-    return[s.last,s.first,s.id,glabel(s.grade),s.school,lp.type||'',lp.meetingDate||'',lp.submittedPell?'Yes':'',boy.completed?'Yes':'',moy.completed?'Yes':'',moy.staar?'Yes':'',moy.telpas?'Yes':'',(moy.accommodations||[]).join('; '),eoy.completed?'Yes':'',eoy.docsUploaded?'Yes':'',te.created?'Yes':'',te.submitted?'Yes':'',rc.qualifies?'Yes':'',rc.docsUploaded?'Yes':'',cp.received?'Yes':'',cp.uploaded?'Yes':'',iw.qualifies?'Yes':'',iw.completed?'Yes':'',iw.resultsUploaded?'Yes':'',e1.qualifies?'Yes':'',e1.taken?'Yes':'',e1.uploaded?'Yes':''].map(v=>`"${v}"`).join(',');
-  });
-  const csv=[hdr.map(h=>`"${h}"`).join(','),...rows].join('\n');
-  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='student_tracker_export.csv';a.click();
+function openExport(){
+  const schools=[...new Set(students.map(s=>s.school).filter(Boolean))].sort();
+  const grades=[...new Set(students.map(s=>s.grade).filter(Boolean))].sort();
+  document.getElementById('expSchool').innerHTML='<option value="">All schools</option>'+schools.map(s=>'<option>'+s+'</option>').join('');
+  document.getElementById('expGrade').innerHTML='<option value="">All grades</option>'+grades.map(g=>'<option value="'+g+'">'+glabel(g)+'</option>').join('');
+  ['expSchool','expGrade','expCat','expStatus'].forEach(id=>document.getElementById(id).value='');
+  updateExpPreview();
+  document.getElementById('exportModal').classList.add('open');
 }
+function getExpFiltered(){
+  const school=document.getElementById('expSchool').value;
+  const grade=document.getElementById('expGrade').value;
+  const cat=document.getElementById('expCat').value;
+  const status=document.getElementById('expStatus').value;
+  return students.filter(s=>{
+    if(school&&s.school!==school) return false;
+    if(grade&&s.grade!==grade) return false;
+    if(cat&&!getCats(s.grade).includes(cat)) return false;
+    if(status){const st=getStatus(s);if(status==='incomplete'&&st==='complete')return false;if(status!=='incomplete'&&st!==status)return false;}
+    return true;
+  });
+}
+function updateExpPreview(){
+  const filtered=getExpFiltered();
+  const cat=document.getElementById('expCat').value;
+  const catLabel=cat?CAT_LABELS[cat]:'all categories';
+  document.getElementById('expPreview').innerHTML='<strong>'+filtered.length+' students</strong> match your filters &nbsp;·&nbsp; Exporting <em>'+catLabel+'</em>';
+  document.getElementById('expBtn').disabled=filtered.length===0;
+}
+function getCatSchema(cat){
+  if(!cat) return{
+    headers:['LPAC Type','LPAC Date','PELL Submitted','BOY Done','MOY Done','STAAR Rec','TELPAS Rec','Accommodations','EOY Done','EOY Docs','Eval Created','Eval Submitted','Reclass Qualifies','Reclass Docs','Letter Received','Letter Uploaded','Iowa Qualifies','Iowa Done','Iowa Results','Eng1 Qualifies','Eng1 Taken','Eng1 Uploaded'],
+    get:s=>{const lp=s.data.lpac||{},b=lp.boy||{},m=lp.moy||{},e=lp.eoy||{},te=s.data.teacherEval||{},rc=s.data.reclass||{},cp=s.data.changeProgram||{},iw=s.data.iowa||{},e1=s.data.eng1||{};return[lp.type||'',lp.meetingDate||'',lp.submittedPell?'Yes':'No',b.completed?'Yes':'No',m.completed?'Yes':'No',m.staar?'Yes':'No',m.telpas?'Yes':'No',(m.accommodations||[]).join('; '),e.completed?'Yes':'No',e.docsUploaded?'Yes':'No',te.created?'Yes':'No',te.submitted?'Yes':'No',rc.qualifies?'Yes':'No',rc.docsUploaded?'Yes':'No',cp.received?'Yes':'No',cp.uploaded?'Yes':'No',iw.qualifies?'Yes':'No',iw.completed?'Yes':'No',iw.resultsUploaded?'Yes':'No',e1.qualifies?'Yes':'No',e1.taken?'Yes':'No',e1.uploaded?'Yes':'No'];}
+  };
+  const schemas={
+    lpac:{headers:['LPAC Type','Meeting Date','PELL Submitted','BOY Done','MOY Done','STAAR Rec','TELPAS Rec','Accommodations','EOY Done','EOY Docs'],get:s=>{const lp=s.data.lpac||{},b=lp.boy||{},m=lp.moy||{},e=lp.eoy||{};return[lp.type||'',lp.meetingDate||'',lp.submittedPell?'Yes':'No',b.completed?'Yes':'No',m.completed?'Yes':'No',m.staar?'Yes':'No',m.telpas?'Yes':'No',(m.accommodations||[]).join('; '),e.completed?'Yes':'No',e.docsUploaded?'Yes':'No'];}},
+    teacherEval:{headers:['Form Created','Submitted to File'],get:s=>{const d=s.data.teacherEval||{};return[d.created?'Yes':'No',d.submitted?'Yes':'No'];}},
+    reclass:{headers:['Qualifies','Docs Uploaded'],get:s=>{const d=s.data.reclass||{};return[d.qualifies?'Yes':'No',d.docsUploaded?'Yes':'No'];}},
+    changeProgram:{headers:['Letter Received','Uploaded to File'],get:s=>{const d=s.data.changeProgram||{};return[d.received?'Yes':'No',d.uploaded?'Yes':'No'];}},
+    iowa:{headers:['Qualifies (40%)','Testing Done','Results Uploaded'],get:s=>{const d=s.data.iowa||{};return[d.qualifies?'Yes':'No',d.completed?'Yes':'No',d.resultsUploaded?'Yes':'No'];}},
+    eng1:{headers:['Qualifies','Provision Taken','Uploaded to File'],get:s=>{const d=s.data.eng1||{};return[d.qualifies?'Yes':'No',d.taken?'Yes':'No',d.uploaded?'Yes':'No'];}}
+  };
+  return schemas[cat]||{headers:[],get:s=>[]};
+}
+function runExport(){
+  const filtered=getExpFiltered();
+  if(!filtered.length){showToast('No students match filters','error');return;}
+  const cat=document.getElementById('expCat').value;
+  const schema=getCatSchema(cat);
+  const base=['Last Name','First Name','ID','Grade','School','Overall Status'];
+  const hdr=[...base,...schema.headers];
+  const rows=filtered.map(s=>{
+    const st=getStatus(s)==='complete'?'Complete':getStatus(s)==='partial'?'In Progress':'Not Started';
+    return[...,[s.last,s.first,s.id,glabel(s.grade),s.school,st],...schema.get(s)].map(v=>'"'+(v||'')+'"').join(',');
+  });
+  const csv=[hdr.map(h=>'"'+h+'"').join(','),...rows].join('\n');
+  const sch=(document.getElementById('expSchool').value||'all').replace(/\s+/g,'_');
+  const gr=document.getElementById('expGrade').value||'all';
+  const fname='export_'+sch+'_grade'+gr+(cat?'_'+cat:'')+'.csv';
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download=fname;a.click();
+  closeModal('exportModal');
+  showToast('Exported '+filtered.length+' students','success');
+}
+function exportCSV(){openExport();}
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 function fd(ts){if(!ts)return'';try{return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'})}catch(e){return ts}}
@@ -699,6 +801,7 @@ document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'))});
 
 ensureTrackingSheet().then(()=>loadFromSheets()).catch(()=>loadFromSheets());
+setTimeout(()=>{['expSchool','expGrade','expCat','expStatus'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('change',updateExpPreview);});},500);
 </script>
 </body>
 </html>
