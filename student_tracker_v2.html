@@ -404,6 +404,7 @@ function renderStats(){
 }
 
 // ── LIST ──────────────────────────────────────────────────────────────────────
+let filteredList=[];
 function renderList(){
   const q=(document.getElementById('search').value||'').toLowerCase();
   const school=document.getElementById('filterSchool').value;
@@ -414,6 +415,7 @@ function renderList(){
   if(school) list=list.filter(({s})=>s.school===school);
   if(grade) list=list.filter(({s})=>s.grade===grade);
   if(status) list=list.filter(({s})=>getStatus(s)===status);
+  filteredList=list; // store for prev/next navigation
   const tb=document.getElementById('tbody');
   if(!list.length){tb.innerHTML='<tr class="empty-row"><td colspan="7">No students found.</td></tr>';return}
   tb.innerHTML=list.map(({s,i})=>{
@@ -440,6 +442,29 @@ function openProfile(i){
   document.getElementById('listView').classList.add('hidden');
   document.getElementById('profileView').classList.add('active');
   renderProfile();updateBreadcrumb();
+}
+function getFilteredPos(){
+  return filteredList.findIndex(({i})=>i===currentIdx);
+}
+function navProfile(dir){
+  const pos=getFilteredPos();
+  const newPos=pos+dir;
+  if(newPos<0||newPos>=filteredList.length) return;
+  currentIdx=filteredList[newPos].i;
+  renderProfile();updateBreadcrumb();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function buildNavButtons(){
+  const pos=getFilteredPos();
+  const total=filteredList.length;
+  const backBtn='<button class="btn btn-sm btn-primary" onclick="closeProfile()">&#8592; Back to list</button>';
+  if(total<=1) return backBtn;
+  const prevDis=pos===0?'style="opacity:0.4;cursor:default" disabled':'';
+  const nextDis=pos===total-1?'style="opacity:0.4;cursor:default" disabled':'';
+  return '<button class="btn btn-sm" onclick="navProfile(-1)" '+prevDis+'>&#8592; Prev</button>'
+    +'<span style="font-size:12px;color:var(--text2);white-space:nowrap;padding:0 4px">'+(pos+1)+' of '+total+'</span>'
+    +'<button class="btn btn-sm" onclick="navProfile(1)" '+nextDis+'>Next &#8594;</button>'
+    +backBtn;
 }
 function closeProfile(){
   currentIdx=null;
@@ -472,9 +497,9 @@ function renderProfile(){
         <span style="font-size:12px;color:var(--text3)">${done}/${total} tasks · ${pct}%</span>
       </div>
     </div>
-    <div style="display:flex;gap:8px;flex-shrink:0">
+    <div style="display:flex;gap:8px;flex-shrink:0;align-items:center;flex-wrap:wrap">
       <button class="btn btn-sm" onclick="openEdit(${currentIdx})">Edit info</button>
-      <button class="btn btn-sm btn-primary" onclick="closeProfile()">← Back to list</button>
+      ${buildNavButtons()}
     </div>
   </div>
   <div class="cats-grid">`;
