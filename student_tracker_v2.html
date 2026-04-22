@@ -297,6 +297,19 @@ async function getToken(){
 async function shGet(range){const t=await getToken();return(await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}`,{headers:{Authorization:'Bearer '+t}})).json()}
 async function shSet(range,vals){const t=await getToken();return fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=RAW`,{method:'PUT',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({range,majorDimension:'ROWS',values:vals})})}
 async function shClear(range){const t=await getToken();return fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:clear`,{method:'POST',headers:{Authorization:'Bearer '+t}})}
+async function ensureTrackingSheet(){
+  const t=await getToken();
+  // Get list of sheets
+  const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`,{headers:{Authorization:'Bearer '+t}});
+  const meta=await r.json();
+  const exists=(meta.sheets||[]).some(s=>s.properties.title==='Tracking');
+  if(!exists){
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`,{
+      method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},
+      body:JSON.stringify({requests:[{addSheet:{properties:{title:'Tracking'}}}]})
+    });
+  }
+}
 
 const HDRS=['Last Name','First Name','ID','Grade','School','Data JSON','Key'];
 function s2row(s){return[s.last,s.first,s.id,s.grade,s.school,JSON.stringify(s.data),s.key]}
@@ -311,10 +324,40 @@ function row2s(row){
 async function loadFromSheets(){
   setSyncStatus('syncing','Loading…');
   try{
-    const res=await shGet(`${SHEET_NAME}!A1:G5000`);
-    const rows=res.values||[];
-    if(!rows.length||rows[0][0]!=='Last Name'){await shSet(`${SHEET_NAME}!A1`,[HDRS]);students=[];}
-    else{students=rows.slice(1).filter(r=>r[0]||r[1]).map(row2s);}
+    // Read student roster from main sheet (A=ID, B=Last, C=First, D=DOB, E=School, F=Grade)
+    const rosterRes=await shGet(`${SHEET_NAME}!A1:F5000`);
+    const rosterRows=rosterRes.values||[];
+    if(!rosterRows.length){students=[];setSyncStatus('synced','Synced');populateFilters();renderList();renderStats();return;}
+    
+    // Skip header row if present (check if first cell looks like a header)
+    const firstCell=(rosterRows[0][0]||'').toString().toLowerCase();
+    const startIdx=(firstCell==='id'||firstCell==='student id'||firstCell==='#')?1:0;
+    const dataRows=rosterRows.slice(startIdx).filter(r=>r[0]||r[1]);
+
+    // Read tracking data from Tracking sheet
+    let trackingMap={};
+    try{
+      const trackRes=await shGet(`Tracking!A1:C5000`);
+      const trackRows=trackRes.values||[];
+      const tStart=trackRows.length&&trackRows[0][0]==='ID'?1:0;
+      trackRows.slice(tStart).forEach(r=>{
+        if(r[0]) trackingMap[r[0]]={key:r[1]||'',data:r[2]?JSON.parse(r[2]):{}}
+      });
+    }catch(e){/* Tracking sheet may not exist yet */}
+
+    students=dataRows.map(row=>{
+      const id=(row[0]||'').toString().trim();
+      const last=(row[1]||'').trim();
+      const first=(row[2]||'').trim();
+      const school=(row[4]||'').trim();
+      const grade=normGrade((row[5]||'').toString().trim());
+      const existing=trackingMap[id]||{};
+      let data=existing.data||{};
+      // ensure all grade-appropriate categories exist
+      getCats(grade).forEach(c=>{if(!data[c])data[c]=blank[c]()});
+      return{last,first,id,grade,school,data,key:existing.key||String(Date.now()+Math.random())};
+    });
+
     setSyncStatus('synced','Synced');
     populateFilters();renderList();renderStats();
   }catch(e){setSyncStatus('error','Connection error');showToast('Could not connect to Google Sheets','error');console.error(e)}
@@ -324,8 +367,11 @@ function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(saveAll,150
 async function saveAll(){
   setSyncStatus('syncing','Saving…');
   try{
-    await shClear(`${SHEET_NAME}!A1:G5000`);
-    await shSet(`${SHEET_NAME}!A1`,[HDRS,...students.map(s2row)]);
+    // Save tracking data to separate Tracking sheet (preserves original roster)
+    const trackHdrs=['ID','Key','Data JSON'];
+    const trackRows=students.map(s=>[s.id,s.key,JSON.stringify(s.data)]);
+    await shClear(`Tracking!A1:C5000`);
+    await shSet(`Tracking!A1`,[trackHdrs,...trackRows]);
     setSyncStatus('synced','Saved ✓');
   }catch(e){setSyncStatus('error','Save failed');showToast('Save failed','error');console.error(e)}
 }
@@ -599,7 +645,7 @@ async function confirmImport(){
   });
   closeModal('importModal');populateFilters();renderList();renderStats();
   await saveAll();
-  showToast(`Imported ${added} students${skipped?` (${skipped} skipped — duplicate ID)`:''}`,'success');
+  showToast(`Loaded ${added} students${skipped?` (${skipped} skipped — duplicate ID)`:''}`,'success');
 }
 
 // ── EXPORT ────────────────────────────────────────────────────────────────────
@@ -622,7 +668,7 @@ function showToast(msg,type=''){const t=document.getElementById('toast');t.textC
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'))});
 
-loadFromSheets();
+ensureTrackingSheet().then(()=>loadFromSheets()).catch(()=>loadFromSheets());
 </script>
 </body>
 </html>
