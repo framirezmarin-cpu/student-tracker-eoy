@@ -110,6 +110,7 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer}
 .track-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;gap:8px}
 .track-label::after{content:'';flex:1;height:1px;background:var(--border)}
 .cats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.cat-card.wide{grid-column:1/-1;max-width:640px}
 
 /* CATEGORY CARDS */
 .cat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:border-color .2s}
@@ -822,10 +823,6 @@ function renderProfile(){
     {label:'Lang Description',value:s.langDesc||'—'}
   ].map(function(f){return'<div class="pf-item"><div class="pf-label">'+f.label+'</div><div class="pf-value">'+f.value+'</div></div>';}).join('');
 
-  // Separate LPAC from other cats
-  var trackACats=['lpac'];
-  var trackBCats=cats.filter(function(c){return c!=='lpac';});
-
   var html='<div class="profile-header">'+
     '<div style="flex:1">'+
       '<div class="profile-name">'+s.last+', '+s.first+'</div>'+
@@ -846,17 +843,10 @@ function renderProfile(){
     '</div>'+
   '</div>';
 
-  // Track A — EOY LPAC
-  html+='<div class="track-section"><div class="track-label">Track A — EOY LPAC (All EB Students)</div><div class="cats-grid">';
-  html+=buildCard('lpac',s,currentIdx);
-  html+='</div></div>';
-
-  // Track B — other categories
-  if(trackBCats.length){
-    html+='<div class="track-section"><div class="track-label">Track B — Additional Requirements</div><div class="cats-grid">';
-    trackBCats.forEach(function(cat){html+=buildCard(cat,s,currentIdx);});
-    html+='</div></div>';
-  }
+  // All categories in one unified grid
+  html+='<div class="cats-grid">';
+  cats.forEach(function(cat){html+=buildCard(cat,s,currentIdx);});
+  html+='</div>';
 
   document.getElementById('profileView').innerHTML=html;
 }
@@ -928,7 +918,8 @@ function buildCard(cat,s,si){
     '</div>';
   }
 
-  return'<div class="cat-card">'+
+  var wideClass=cat==='lpac'?' wide':'';
+  return'<div class="cat-card'+wideClass+'">'+
     '<div class="cat-hdr"><div class="cat-title">'+title+'</div><span class="badge '+bc+'">'+bTxt(bc)+'</span></div>'+
     '<div class="cat-body">'+body+'</div>'+
   '</div>';
