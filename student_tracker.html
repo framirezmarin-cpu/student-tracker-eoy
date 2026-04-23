@@ -198,6 +198,11 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer}
       <select id="fGrade" onchange="renderList()"><option value="">All grades</option></select>
       <select id="fProgramFilter" onchange="renderList()"><option value="">All programs</option></select>
       <select id="fMonitor" onchange="renderList()"><option value="">All monitor years</option></select>
+      <select id="fSpecEd" onchange="renderList()">
+        <option value="">All students</option>
+        <option value="yes">SpecEd only</option>
+        <option value="no">Non-SpecEd only</option>
+      </select>
       <select id="fStatus" onchange="renderList()">
         <option value="">All statuses</option>
         <option value="complete">Complete</option>
@@ -759,6 +764,9 @@ function renderList(){
     }
   }
   if(monitor)list=list.filter(function(x){return x.s.monitorYear===monitor;});
+  var specEd=document.getElementById('fSpecEd').value;
+  if(specEd==='yes') list=list.filter(function(x){return x.s.specEd&&x.s.specEd.toUpperCase()==='Y';});
+  if(specEd==='no') list=list.filter(function(x){return !x.s.specEd||x.s.specEd.toUpperCase()!=='Y';});
   if(status)list=list.filter(function(x){return getStatus(x.s)===status;});
   filteredList=list;
   var tb=document.getElementById('tbody');
