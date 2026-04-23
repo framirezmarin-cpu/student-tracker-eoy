@@ -182,7 +182,7 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer}
     <div><div class="app-title">EB Student Tracker</div><div class="app-sub">End of Year · EOY</div></div>
   </div>
   <div class="crumb-wrap" id="breadcrumb"></div>
-  <div class="sync"><div class="sync-dot" id="syncDot"></div><span id="syncText">Connecting…</span></div>
+  <div style="display:flex;align-items:center;gap:12px"><button class="btn btn-sm" onclick="openSettings()" style="font-size:11px">⚙ Settings</button><div class="sync"><div class="sync-dot" id="syncDot"></div><span id="syncText">Connecting…</span></div></div>
 </div>
 
 <div class="main">
@@ -343,17 +343,67 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer}
 
 <div class="toast" id="toast"></div>
 
+<!-- Settings Modal -->
+<div class="overlay" id="settingsModal">
+  <div class="modal" style="width:580px">
+    <div class="modal-title">⚙ App Settings</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:1.25rem;line-height:1.6">Configure this tracker for your account. These settings are saved in your browser and only affect your copy of the app.</p>
+
+    <div class="mfield">
+      <label>Google Sheet ID *</label>
+      <input id="cfgSheetId" type="text" placeholder="1RZdud1PWiIt5NIWQ8TAO7UbKBk2_vdD_gAdkUy0EkFU"/>
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">Found in your Sheet URL: docs.google.com/spreadsheets/d/<strong>SHEET_ID</strong>/edit</div>
+    </div>
+
+    <div class="mfield">
+      <label>Service Account Email *</label>
+      <input id="cfgSaEmail" type="text" placeholder="student-tracker@project.iam.gserviceaccount.com"/>
+    </div>
+
+    <div class="mfield">
+      <label>Service Account Private Key *</label>
+      <textarea id="cfgSaKey" style="width:100%;padding:8px 10px;font-size:11px;font-family:var(--mono);min-height:80px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);resize:vertical" placeholder="-----BEGIN PRIVATE KEY-----&#10;...paste your full JSON key here or just the private_key value...&#10;-----END PRIVATE KEY-----"></textarea>
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">Paste the full contents of your service account JSON file, or just the private_key value</div>
+    </div>
+
+    <div class="mfield">
+      <label>Your Campuses (one per line) *</label>
+      <textarea id="cfgCampuses" style="width:100%;padding:8px 10px;font-size:12px;min-height:120px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);resize:vertical" placeholder="ILTexas - Orem ES&#10;ILTexas - Orem MS&#10;ILTexas - Pearland ES&#10;..."></textarea>
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">Enter campus names exactly as they appear in Skyward, one per line</div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--text2);margin-bottom:1rem;border:1px solid var(--border)">
+      <strong style="color:var(--text)">Campus grouping</strong> — campuses with matching names before "ES"/"MS" will automatically be grouped together in the campus filter (e.g. "Orem ES" + "Orem MS" → "Orem").
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeOverlay('settingsModal')">Cancel</button>
+      <button class="btn" onclick="resetSettings()" style="color:var(--red)">Reset to defaults</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save &amp; reload</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const SHEET_ID = '1RZdud1PWiIt5NIWQ8TAO7UbKBk2_vdD_gAdkUy0EkFU';
 const ROSTER_TAB = 'Roster';
 const TRACKING_TAB = 'Tracking';
-const SA_EMAIL = "student-tracker@student-tracker-eoy.iam.gserviceaccount.com";
-const SA_KEY = "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDLRRCGy4GkHsRZ\nDbFhJncY3/4vdxDfBzNU6kDeRYZoi3VGQMPOANlX+g8W9PNP+czh8vPVViu6edav\nUNYXkzXgvDka50ldRAA3PuTaez3v9iP6G18/M+3OOJcE4EMXkVluAJK/9REPmOvt\nyOQLZk6ACKe05MGypjIxPbwgTP5K7ua4ubOlwj6mZve7NAEtU39qdeJJ1OXE6c9k\nTPVTB9rtnZ+5sH1Dajb+WEO/EHNzfmdgv6mTKaSkw2tOZV3zTWlLxexe5lXqBDQG\nTyjorAtiofr8B1LjulXfUBqZGroApEJlG9ZcCS22fjN3aRFZu0Mi2mv+80Wpe7yQ\nD+4XUDBBAgMBAAECggEAH490HvG3CcPrKYaKPXLK+BZDMZxzhqVoD22lr70svsu0\nZDmHDVOta078i8xxgL/g0041FLEh7fyf3C2ZaCSnr2KaHTa++demju1ZfCC5f6oA\ncQNR+Q63hBbeP9gQIrcjIwS8xEgpI3pTW2KfIbP7ST7OxzPjbTkHvwR+UqeRrhF9\n1Xkaf6IbHw/YYTkAxFF96idzh5Sp3IPKlbDscE6FcL72W9EaO7ZWydFPWH+xZpd8\nkDOIk4HwhGn4PRoDLd8Rajs5kg3/faT0YHrcFNdD+T8qJtN7f61y/IvYbY8oLlqe\nTZ1Pc+jctZ52U9qDpZrInPm/QL7d2PVoqOUQmi+b1wKBgQDxtxN6gNOnLO0ofL9N\naMLdAkugu+zIUmZAKY5EzqMKYlSmHkMIEkTpDsVosqfNc1leX4WmuJ3I82/IPg7z\nt3dwjKNO6ILd4K3Wg8ePpW2ZbocRKQFlqZ5FKJFrQWYudQaBRbFjSmHfMTS/Wehv\nCWAROiwyaoufkE1YaUMxJjZkuwKBgQDXSFifZRiWXQKFqpPMYJde+oCu8UpVzDzc\nl5rFxTDBashjMLGZJekgF9mSbvDiUssG38nfdGcM+1ffUQnwUZd4iBKH/siRKoxE\nSkgvant/L8PUc9H0JDxTr5D8N3mhaGZAN6ptAA9SSEX4cNtBPKitdKQBPMzSPkiU\nBT7LRpvtMwKBgQDcgRDp7mAm39sx1iuGaI1rpM5tQUKOtGzHF6HLr14Y+P8T1AN+\nd3wZx/nauzBNQm9Coo2APGbkjP9qgwKM3s+9Au9v6riHxJGRYgJJTrafA69/vhKi\nNYxGtu2CFNUsiGF4yKU8WPzT6UWfUlux/7F9xb3P+FaLJ88HWm+LhLqWRQKBgEHo\nhDlIWh6umvcRIe6QI8eQKZVlibx6qqdeQqQJmsOcTX0Qi063rIeGxbVvAZBIiJ+y\nI7ulh2cSC/Tyenh4gkcEYagA+KZ4wDioBTF/CBAIL4v7aWu1LELynRCaa0JfE+7V\nG/gC7K3kMoe9BWMTjxCLhSpb0tkK+G1YrcDN/S7BAoGAZFxtpcPS4Y2A1cndZ0wi\nVujwUmk0U/RdaQL7mnAdQZUYisk8NKTNd44tQPGYGhBl/3a6z2O6BQbIQBIw3+1S\ntYNWjYPC6+qw3l0sUo43jWE2CKyHi3iEEZ7idMEMS4AO5tI5vERs19TMoUkqgqP/\nBdaLZbcTmvY6hrjqboosjdE=\n-----END PRIVATE KEY-----\n";
+
+function loadConfig(){
+  var raw=localStorage.getItem('eb_tracker_config');
+  if(!raw) return null;
+  try{return JSON.parse(raw);}catch(e){return null;}
+}
+function saveConfig(cfg){localStorage.setItem('eb_tracker_config',JSON.stringify(cfg));}
+
+var _cfg=loadConfig()||{};
+var SHEET_ID=_cfg.sheetId||'';
+var SA_EMAIL=_cfg.saEmail||"student-tracker@student-tracker-eoy.iam.gserviceaccount.com";
+var SA_KEY=_cfg.saKey||"-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDLRRCGy4GkHsRZ\nDbFhJncY3/4vdxDfBzNU6kDeRYZoi3VGQMPOANlX+g8W9PNP+czh8vPVViu6edav\nUNYXkzXgvDka50ldRAA3PuTaez3v9iP6G18/M+3OOJcE4EMXkVluAJK/9REPmOvt\nyOQLZk6ACKe05MGypjIxPbwgTP5K7ua4ubOlwj6mZve7NAEtU39qdeJJ1OXE6c9k\nTPVTB9rtnZ+5sH1Dajb+WEO/EHNzfmdgv6mTKaSkw2tOZV3zTWlLxexe5lXqBDQG\nTyjorAtiofr8B1LjulXfUBqZGroApEJlG9ZcCS22fjN3aRFZu0Mi2mv+80Wpe7yQ\nD+4XUDBBAgMBAAECggEAH490HvG3CcPrKYaKPXLK+BZDMZxzhqVoD22lr70svsu0\nZDmHDVOta078i8xxgL/g0041FLEh7fyf3C2ZaCSnr2KaHTa++demju1ZfCC5f6oA\ncQNR+Q63hBbeP9gQIrcjIwS8xEgpI3pTW2KfIbP7ST7OxzPjbTkHvwR+UqeRrhF9\n1Xkaf6IbHw/YYTkAxFF96idzh5Sp3IPKlbDscE6FcL72W9EaO7ZWydFPWH+xZpd8\nkDOIk4HwhGn4PRoDLd8Rajs5kg3/faT0YHrcFNdD+T8qJtN7f61y/IvYbY8oLlqe\nTZ1Pc+jctZ52U9qDpZrInPm/QL7d2PVoqOUQmi+b1wKBgQDxtxN6gNOnLO0ofL9N\naMLdAkugu+zIUmZAKY5EzqMKYlSmHkMIEkTpDsVosqfNc1leX4WmuJ3I82/IPg7z\nt3dwjKNO6ILd4K3Wg8ePpW2ZbocRKQFlqZ5FKJFrQWYudQaBRbFjSmHfMTS/Wehv\nCWAROiwyaoufkE1YaUMxJjZkuwKBgQDXSFifZRiWXQKFqpPMYJde+oCu8UpVzDzc\nl5rFxTDBashjMLGZJekgF9mSbvDiUssG38nfdGcM+1ffUQnwUZd4iBKH/siRKoxE\nSkgvant/L8PUc9H0JDxTr5D8N3mhaGZAN6ptAA9SSEX4cNtBPKitdKQBPMzSPkiU\nBT7LRpvtMwKBgQDcgRDp7mAm39sx1iuGaI1rpM5tQUKOtGzHF6HLr14Y+P8T1AN+\nd3wZx/nauzBNQm9Coo2APGbkjP9qgwKM3s+9Au9v6riHxJGRYgJJTrafA69/vhKi\nNYxGtu2CFNUsiGF4yKU8WPzT6UWfUlux/7F9xb3P+FaLJ88HWm+LhLqWRQKBgEHo\nhDlIWh6umvcRIe6QI8eQKZVlibx6qqdeQqQJmsOcTX0Qi063rIeGxbVvAZBIiJ+y\nI7ulh2cSC/Tyenh4gkcEYagA+KZ4wDioBTF/CBAIL4v7aWu1LELynRCaa0JfE+7V\nG/gC7K3kMoe9BWMTjxCLhSpb0tkK+G1YrcDN/S7BAoGAZFxtpcPS4Y2A1cndZ0wi\nVujwUmk0U/RdaQL7mnAdQZUYisk8NKTNd44tQPGYGhBl/3a6z2O6BQbIQBIw3+1S\ntYNWjYPC6+qw3l0sUo43jWE2CKyHi3iEEZ7idMEMS4AO5tI5vERs19TMoUkqgqP/\nBdaLZbcTmvY6hrjqboosjdE=\n-----END PRIVATE KEY-----\n";
 const SA_TOKEN_URI = "https://oauth2.googleapis.com/token";
 
-const MY_CAMPUSES = [
+var MY_CAMPUSES=_cfg.campuses||[
   'ILTexas - Orem ES','ILTexas - Orem MS',
   'ILTexas - Pearland ES','ILTexas - Pearland MS',
   'ILTexas - Windmill Lakes ES','ILTexas - Windmill Lakes MS',
@@ -724,16 +774,25 @@ function populateFilters(){
   var grades=[...new Set(students.map(function(s){return s.grade;}).filter(Boolean))].sort();
   var programs=[...new Set(students.map(function(s){return s.program;}).filter(Boolean))].sort();
   var monitors=[...new Set(students.map(function(s){return s.monitorYear;}).filter(Boolean))].sort();
-  var groupOpts='<option value="">All campuses</option>'+
-    '<optgroup label="By School">'+
-    '<option value="__orem__">Orem (ES + MS)</option>'+
-    '<option value="__pearland__">Pearland (ES + MS)</option>'+
-    '<option value="__windmill__">Windmill Lakes (ES + MS)</option>'+
-    '<option value="ILTexas - WM Lakes Orem HS">High School</option>'+
-    '</optgroup>'+
-    '<optgroup label="By Campus">'+
-    schools.map(function(s){return'<option>'+s+'</option>';}).join('')+
-    '</optgroup>';
+  // Build dynamic campus groups based on MY_CAMPUSES
+  var campusGroups=buildCampusGroups(MY_CAMPUSES);
+  var groupEntries=Object.keys(campusGroups).filter(function(k){return campusGroups[k].length>1;});
+  var singleEntries=Object.keys(campusGroups).filter(function(k){return campusGroups[k].length===1;});
+  var groupOpts='<option value="">All campuses</option>';
+  if(groupEntries.length){
+    groupOpts+='<optgroup label="By School">';
+    groupEntries.forEach(function(k){
+      var label=k.replace(/ILTexas\s*-\s*/i,'').trim();
+      groupOpts+='<option value="__grp__'+k+'">'+label+' ('+campusGroups[k].map(function(c){return c.match(/(ES|MS|HS)$/i)?c.match(/(ES|MS|HS)$/i)[0]:'';}).join('+')+')'+' </option>';
+    });
+    singleEntries.forEach(function(k){
+      var c=campusGroups[k][0];
+      var label=c.replace(/ILTexas\s*-\s*/i,'').trim();
+      groupOpts+='<option value="'+c+'">'+label+'</option>';
+    });
+    groupOpts+='</optgroup>';
+  }
+  groupOpts+='<optgroup label="By Campus">'+schools.map(function(s){return'<option>'+s+'</option>';}).join('')+'</optgroup>';
   document.getElementById('fSchool').innerHTML=groupOpts;
   document.getElementById('fGrade').innerHTML='<option value="">All grades</option>'+grades.map(function(g){return'<option value="'+g+'">'+gl(g)+'</option>';}).join('');
   document.getElementById('fProgramFilter').innerHTML='<option value="">All programs</option>'+'<option value="__denial__">Denial</option>'+programs.map(function(p){return'<option>'+p+'</option>';}).join('');
@@ -766,10 +825,13 @@ function renderList(){
   var list=students.map(function(s,i){return{s:s,i:i};});
   if(q)list=list.filter(function(x){return(x.s.last+' '+x.s.first+' '+x.s.id).toLowerCase().includes(q);});
   if(school){
-    if(school==='__orem__') list=list.filter(function(x){return x.s.school==='ILTexas - Orem ES'||x.s.school==='ILTexas - Orem MS';});
-    else if(school==='__pearland__') list=list.filter(function(x){return x.s.school==='ILTexas - Pearland ES'||x.s.school==='ILTexas - Pearland MS';});
-    else if(school==='__windmill__') list=list.filter(function(x){return x.s.school==='ILTexas - Windmill Lakes ES'||x.s.school==='ILTexas - Windmill Lakes MS';});
-    else list=list.filter(function(x){return x.s.school===school;});
+    if(school.startsWith('__grp__')){
+      var grpKey=school.replace('__grp__','');
+      var grpCampuses=buildCampusGroups(MY_CAMPUSES)[grpKey]||[];
+      list=list.filter(function(x){return grpCampuses.indexOf(x.s.school)>=0;});
+    } else {
+      list=list.filter(function(x){return x.s.school===school;});
+    }
   }
   if(grade)list=list.filter(function(x){return x.s.grade===grade;});
   if(program){
@@ -1077,8 +1139,85 @@ function showToast(msg,type){var t=document.getElementById('toast');t.textConten
 document.querySelectorAll('.overlay').forEach(function(m){m.addEventListener('click',function(e){if(e.target===m)m.classList.remove('open');});});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(function(m){m.classList.remove('open');});});
 
+// ── SETTINGS ─────────────────────────────────────────────────────────────────
+function openSettings(){
+  var cfg=loadConfig()||{};
+  document.getElementById('cfgSheetId').value=cfg.sheetId||SHEET_ID||'';
+  document.getElementById('cfgSaEmail').value=cfg.saEmail||SA_EMAIL||'';
+  document.getElementById('cfgSaKey').value=cfg.saKey||'';
+  document.getElementById('cfgCampuses').value=(cfg.campuses||MY_CAMPUSES).join('\n');
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+function extractKeyFromJson(input){
+  input=input.trim();
+  // If it looks like a full JSON object, parse it
+  if(input.startsWith('{')){
+    try{
+      var obj=JSON.parse(input);
+      if(obj.private_key) return obj.private_key;
+    }catch(e){}
+  }
+  // Otherwise assume it's the raw key
+  return input;
+}
+
+function buildCampusGroups(campuses){
+  // Auto-detect groups: campuses sharing same base name before ES/MS
+  var groups={};
+  campuses.forEach(function(c){
+    var base=c.replace(/\s*(ES|MS)\s*$/i,'').trim();
+    if(!groups[base]) groups[base]=[];
+    groups[base].push(c);
+  });
+  return groups;
+}
+
+function saveSettings(){
+  var sheetId=document.getElementById('cfgSheetId').value.trim();
+  var saEmail=document.getElementById('cfgSaEmail').value.trim();
+  var saKeyRaw=document.getElementById('cfgSaKey').value.trim();
+  var campusesRaw=document.getElementById('cfgCampuses').value.trim();
+
+  if(!sheetId||!saEmail||!saKeyRaw||!campusesRaw){
+    showToast('Please fill in all required fields','error');return;
+  }
+
+  var saKey=extractKeyFromJson(saKeyRaw);
+  var campuses=campusesRaw.split('\n').map(function(c){return c.trim();}).filter(Boolean);
+
+  var cfg={sheetId:sheetId,saEmail:saEmail,saKey:saKey,campuses:campuses};
+  saveConfig(cfg);
+  showToast('Settings saved — reloading…','success');
+  setTimeout(function(){location.reload();},1000);
+}
+
+function resetSettings(){
+  if(!confirm('Reset to default settings? This will reload the app.')) return;
+  localStorage.removeItem('eb_tracker_config');
+  location.reload();
+}
+
+// Apply saved config on load
+(function applySavedConfig(){
+  var cfg=loadConfig();
+  if(!cfg) return;
+  if(cfg.sheetId) SHEET_ID=cfg.sheetId;
+  if(cfg.saEmail) SA_EMAIL=cfg.saEmail;
+  if(cfg.saKey) SA_KEY=cfg.saKey;
+  if(cfg.campuses&&cfg.campuses.length) MY_CAMPUSES=cfg.campuses;
+})();
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 async function init(){
+  var cfg=loadConfig();
+  if(!cfg||!cfg.sheetId){
+    // First time - show welcome + settings
+    setSS('error','Setup required');
+    document.getElementById('statsRow').innerHTML='<div style="grid-column:1/-1;background:var(--blue-bg);border:1px solid var(--blue-border);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;font-size:13px;color:var(--blue)"><strong>Welcome to EB Student Tracker!</strong> Click <strong>⚙ Settings</strong> in the top right to configure your Google Sheet and campuses before getting started.</div>';
+    openSettings();
+    return;
+  }
   setSS('syncing','Setting up…');
   try{await ensureSheets();await load();}
   catch(e){setSS('error','Setup failed');console.error(e);}
