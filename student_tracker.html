@@ -362,7 +362,9 @@ const EOY_OUTCOMES = [
 ];
 
 // ── GRADE RULES ───────────────────────────────────────────────────────────────
-function getCats(grade) {
+function getCats(grade, parentalPermission) {
+  var isDenial = (parentalPermission||'').toString().toUpperCase().includes('DENIED');
+  if (isDenial) return ['lpac'];
   var cats = ['lpac'];
   if (!['PK','KG'].includes(grade)) { cats.push('teacherEval'); cats.push('reclass'); }
   if (grade === '05') cats.push('changeProgram');
@@ -381,14 +383,14 @@ function blankLpac(){
   return {meetingDate:'',meetingHeld:false,meetingHeldAt:null,formCompleted:false,formCompletedAt:null,formSubmitted:false,formSubmittedAt:null,parentNotified:false,parentNotifiedAt:null,docsUploaded:false,docsUploadedAt:null,outcome:''};
 }
 function blankTeacherEval(){return {created:false,createdAt:null,submitted:false,submittedAt:null};}
-function blankReclass(){return {qualifies:false,qualifiesAt:null,docsUploaded:false,docsUploadedAt:null,parentLetterSent:false,parentLetterSentAt:null};}
+function blankReclass(){return {qualifies:false,qualifiesAt:null,docsUploaded:false,docsUploadedAt:null,parentLetterSent:false,parentLetterSentAt:null,signedLetterReturned:false,signedLetterReturnedAt:null};}
 function blankChangeProgram(){return {received:false,receivedAt:null,uploaded:false,uploadedAt:null};}
 function blankIowa(){return {qualifies:false,qualifiesAt:null,completed:false,completedAt:null,resultsUploaded:false,resultsUploadedAt:null};}
 function blankEng1(){return {qualifies:false,qualifiesAt:null,taken:false,takenAt:null,uploaded:false,uploadedAt:null};}
 
-function buildData(grade){
+function buildData(grade,parentalPermission){
   var d={};
-  getCats(grade).forEach(function(c){
+  getCats(grade,parentalPermission||'').forEach(function(c){
     if(c==='lpac')d.lpac=blankLpac();
     else if(c==='teacherEval')d.teacherEval=blankTeacherEval();
     else if(c==='reclass')d.reclass=blankReclass();
@@ -402,11 +404,11 @@ function buildData(grade){
 // ── PROGRESS ──────────────────────────────────────────────────────────────────
 function calcProg(s){
   var total=0,done=0;
-  getCats(s.grade).forEach(function(cat){
+  getCats(s.grade,s.parentalPermission).forEach(function(cat){
     var d=s.data[cat];if(!d)return;
     if(cat==='lpac'){total+=5;if(d.meetingHeld)done++;if(d.formCompleted)done++;if(d.formSubmitted)done++;if(d.parentNotified)done++;if(d.docsUploaded)done++;}
     else if(cat==='teacherEval'){total+=2;if(d.created)done++;if(d.submitted)done++;}
-    else if(cat==='reclass'){total+=3;if(d.qualifies)done++;if(d.docsUploaded)done++;if(d.parentLetterSent)done++;}
+    else if(cat==='reclass'){total+=4;if(d.qualifies)done++;if(d.docsUploaded)done++;if(d.parentLetterSent)done++;if(d.signedLetterReturned)done++;}
     else if(cat==='changeProgram'){total+=2;if(d.received)done++;if(d.uploaded)done++;}
     else if(cat==='iowa'){total+=3;if(d.qualifies)done++;if(d.completed)done++;if(d.resultsUploaded)done++;}
     else if(cat==='eng1'){total+=3;if(d.qualifies)done++;if(d.taken)done++;if(d.uploaded)done++;}
@@ -503,7 +505,8 @@ function roster2s(row,trackMap){
   var grade=normGrade((row[3]||'').toString());
   var existing=trackMap[id]||{};
   var data=existing.data||{};
-  getCats(grade).forEach(function(c){
+  var perm=(row[7]||'').toString().trim();
+  getCats(grade,perm).forEach(function(c){
     if(!data[c]){
       if(c==='lpac')data.lpac=blankLpac();
       else if(c==='teacherEval')data.teacherEval=blankTeacherEval();
@@ -686,7 +689,7 @@ async function confirmImport(){
       if(imp.specEd)s.specEd=imp.specEd;
       if(imp.homeLang)s.homeLang=imp.homeLang;
       if(imp.langDesc)s.langDesc=imp.langDesc;
-      getCats(s.grade).forEach(function(c){
+      getCats(s.grade,s.parentalPermission).forEach(function(c){
         if(!s.data[c]){
           if(c==='lpac')s.data.lpac=blankLpac();
           else if(c==='teacherEval')s.data.teacherEval=blankTeacherEval();
@@ -699,7 +702,7 @@ async function confirmImport(){
       updated++;
     } else {
       if(!imp.last&&!imp.first){skipped++;return;}
-      students.push({id:imp.id,last:imp.last,first:imp.first,grade:imp.grade,school:imp.school,program:imp.program||'',monitorYear:imp.monitorYear||'',parentalPermission:imp.parentalPermission||'',altLangProg:imp.altLangProg||'',programType:imp.programType||'',yearsUS:imp.yearsUS||'',specEd:imp.specEd||'',homeLang:imp.homeLang||'',langDesc:imp.langDesc||'',key:String(Date.now()+Math.random()),data:buildData(imp.grade)});
+      students.push({id:imp.id,last:imp.last,first:imp.first,grade:imp.grade,school:imp.school,program:imp.program||'',monitorYear:imp.monitorYear||'',parentalPermission:imp.parentalPermission||'',altLangProg:imp.altLangProg||'',programType:imp.programType||'',yearsUS:imp.yearsUS||'',specEd:imp.specEd||'',homeLang:imp.homeLang||'',langDesc:imp.langDesc||'',key:String(Date.now()+Math.random()),data:buildData(imp.grade,imp.parentalPermission)});
       added++;
     }
   });
@@ -762,6 +765,7 @@ function renderList(){
     var bc=st==='complete'?'b-green':st==='partial'?'b-amber':'b-dim';
     var bt=st==='complete'?'Complete':st==='partial'?'In progress':'Not started';
     var monBadge=s.monitorYear?'<span class="badge b-purple" style="margin-left:4px">'+s.monitorYear+'</span>':'';
+    var denialBadge=(s.parentalPermission||'').toUpperCase().includes('DENIED')?'<span class="badge b-red" style="margin-left:4px">Denial</span>':'';
     var outcome=s.data.lpac?s.data.lpac.outcome:'';
     return'<tr class="clickable" onclick="openProfile('+i+')">'+
       '<td><strong style="font-size:13px">'+s.last+', '+s.first+'</strong></td>'+
@@ -769,7 +773,7 @@ function renderList(){
       '<td><span class="grade-pill">'+gl(s.grade)+'</span></td>'+
       '<td style="font-size:11px;color:var(--text2)">'+s.school+'</td>'+
       '<td style="font-size:11px;color:var(--text2)">'+s.program+'</td>'+
-      '<td>'+monBadge+'</td>'+
+      '<td>'+monBadge+denialBadge+'</td>'+
       '<td style="font-size:11px;color:var(--text3)">'+lpacOutcomeLabel(outcome)+'</td>'+
       '<td><span class="badge '+bc+'">'+bt+'</span><br>'+
         '<span style="font-size:10px;color:var(--text3);font-family:var(--mono)">'+p.done+'/'+p.total+'</span>'+
@@ -805,7 +809,7 @@ function buildNav(){
 
 function renderProfile(){
   var s=students[currentIdx];
-  var cats=getCats(s.grade);
+  var cats=getCats(s.grade,s.parentalPermission);
   var p=calcProg(s);
   var st=getStatus(s);
   var bc=st==='complete'?'b-green':st==='partial'?'b-amber':'b-dim';
@@ -832,6 +836,7 @@ function renderProfile(){
         '<span class="badge '+bc+'">'+bt+'</span>'+
         '<span style="font-size:11px;color:var(--text3);font-family:var(--mono)">'+p.done+'/'+p.total+' · '+p.pct+'%</span>'+
         (s.monitorYear?'<span class="badge b-purple">Monitor: '+s.monitorYear+'</span>':'')+
+        ((s.parentalPermission||'').toUpperCase().includes('DENIED')?'<span class="badge b-red">Denial</span>':'')+
         (s.specEd&&s.specEd.toLowerCase()!=='n'?'<span class="badge b-amber">SpecEd</span>':'')+
       '</div>'+
       '<div class="profile-fields">'+profileFields+'</div>'+
@@ -889,11 +894,12 @@ function buildCard(cat,s,si){
       wfStep(2,'Submitted to Student File',d.submitted,d.submittedAt,si,'teacherEval','submitted')+
     '</div>';
   } else if(cat==='reclass'){
-    bc=bStat([d.qualifies,d.docsUploaded,d.parentLetterSent]);
+    bc=bStat([d.qualifies,d.docsUploaded,d.parentLetterSent,d.signedLetterReturned]);
     body='<div class="workflow">'+
       wfStep(1,'Meets Reclassification Criteria',d.qualifies,d.qualifiesAt,si,'reclass','qualifies')+
       wfStep(2,'Reclassification Docs Uploaded',d.docsUploaded,d.docsUploadedAt,si,'reclass','docsUploaded')+
       wfStep(3,'Parent Reclassification Letter Sent',d.parentLetterSent,d.parentLetterSentAt,si,'reclass','parentLetterSent')+
+      wfStep(4,'Signed Letter Returned',d.signedLetterReturned,d.signedLetterReturnedAt,si,'reclass','signedLetterReturned')+
     '</div>';
   } else if(cat==='changeProgram'){
     bc=bStat([d.received,d.uploaded]);
@@ -956,7 +962,7 @@ async function saveStudent(){
     students[editIdx]=Object.assign({},old,{last:last,first:first,grade:grade,school:school,program:document.getElementById('fProgram').value.trim(),monitorYear:document.getElementById('fMonitorM').value,data:data});
     if(currentIdx===editIdx)renderProfile();
   } else {
-    students.push({id:document.getElementById('fId').value.trim(),last:last,first:first,grade:grade,school:school,program:document.getElementById('fProgram').value.trim(),monitorYear:document.getElementById('fMonitorM').value,parentalPermission:'',altLangProg:'',programType:'',yearsUS:'',specEd:'',homeLang:'',langDesc:'',key:String(Date.now()),data:buildData(grade)});
+    students.push({id:document.getElementById('fId').value.trim(),last:last,first:first,grade:grade,school:school,program:document.getElementById('fProgram').value.trim(),monitorYear:document.getElementById('fMonitorM').value,parentalPermission:'',altLangProg:'',programType:'',yearsUS:'',specEd:'',homeLang:'',langDesc:'',key:String(Date.now()),data:buildData(grade,'')});
   }
   closeOverlay('studentModal');populateFilters();renderList();renderStats();scheduleSave();
   showToast(editIdx!==null?'Student updated':'Student added','success');editIdx=null;
