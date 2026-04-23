@@ -7,22 +7,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0f1117;--surface:#181c27;--surface2:#1e2235;--surface3:#252a3d;
-  --border:#2a3050;--border2:#323858;
-  --text:#e8eaf2;--text2:#8b91b0;--text3:#545a78;
-  --green:#22c55e;--green-dim:#16a34a;--green-bg:rgba(34,197,94,.1);--green-border:rgba(34,197,94,.25);
-  --amber:#f59e0b;--amber-bg:rgba(245,158,11,.1);--amber-border:rgba(245,158,11,.25);
-  --blue:#60a5fa;--blue-bg:rgba(96,165,250,.1);--blue-border:rgba(96,165,250,.25);
-  --red:#f87171;--red-bg:rgba(248,113,113,.1);--red-border:rgba(248,113,113,.25);
-  --purple:#a78bfa;--purple-bg:rgba(167,139,250,.1);
-  --accent:#6366f1;--accent2:#818cf8;
+  --bg:#f4f6f9;--surface:#ffffff;--surface2:#f0f2f5;--surface3:#e8ebf0;
+  --border:#dde1e9;--border2:#c8cdd8;
+  --text:#1a1f2e;--text2:#5a6478;--text3:#8f97a8;
+  --green:#16a34a;--green-dim:#15803d;--green-bg:rgba(22,163,74,.08);--green-border:rgba(22,163,74,.2);
+  --amber:#b45309;--amber-bg:rgba(180,83,9,.08);--amber-border:rgba(180,83,9,.2);
+  --blue:#1d4ed8;--blue-bg:rgba(29,78,216,.08);--blue-border:rgba(29,78,216,.2);
+  --red:#dc2626;--red-bg:rgba(220,38,38,.08);--red-border:rgba(220,38,38,.2);
+  --purple:#7c3aed;--purple-bg:rgba(124,58,237,.08);
+  --accent:#4f46e5;--accent2:#6366f1;
   --radius:8px;--radius-lg:12px;
   --font:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
 ::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-track{background:var(--surface2)}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 
 /* HEADER */
@@ -142,7 +142,7 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer}
 .sec-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-top:4px}
 
 /* MODAL */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(4px)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(4px)}
 .overlay.open{opacity:1;pointer-events:all}
 .modal{background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border2);padding:1.5rem;width:480px;max-width:95vw;box-shadow:0 25px 80px rgba(0,0,0,.5);transform:translateY(12px);transition:transform .2s;max-height:90vh;overflow-y:auto}
 .overlay.open .modal{transform:translateY(0)}
@@ -166,7 +166,7 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer}
 .exp-preview{background:var(--surface3);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--text2);margin-bottom:1rem;border:1px solid var(--border);min-height:40px}
 
 /* TOAST */
-.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--surface2);color:var(--text);font-size:12px;padding:10px 16px;border-radius:var(--radius);z-index:2000;transform:translateY(20px);opacity:0;transition:all .25s;pointer-events:none;max-width:320px;border:1px solid var(--border2);box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--text);color:var(--surface);font-size:12px;padding:10px 16px;border-radius:var(--radius);z-index:2000;transform:translateY(20px);opacity:0;transition:all .25s;pointer-events:none;max-width:320px;border:1px solid var(--border2);box-shadow:0 8px 32px rgba(0,0,0,.4)}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.success{border-color:var(--green-border);color:var(--green)}
 .toast.error{border-color:var(--red-border);color:var(--red)}
@@ -196,7 +196,7 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer}
       </div>
       <select id="fSchool" onchange="renderList()"><option value="">All campuses</option></select>
       <select id="fGrade" onchange="renderList()"><option value="">All grades</option></select>
-      <select id="fProgram" onchange="renderList()"><option value="">All programs</option></select>
+      <select id="fProgramFilter" onchange="renderList()"><option value="">All programs</option></select>
       <select id="fMonitor" onchange="renderList()"><option value="">All monitor years</option></select>
       <select id="fStatus" onchange="renderList()">
         <option value="">All statuses</option>
@@ -717,7 +717,7 @@ function populateFilters(){
   var monitors=[...new Set(students.map(function(s){return s.monitorYear;}).filter(Boolean))].sort();
   document.getElementById('fSchool').innerHTML='<option value="">All campuses</option>'+schools.map(function(s){return'<option>'+s+'</option>';}).join('');
   document.getElementById('fGrade').innerHTML='<option value="">All grades</option>'+grades.map(function(g){return'<option value="'+g+'">'+gl(g)+'</option>';}).join('');
-  document.getElementById('fProgram').innerHTML='<option value="">All programs</option>'+programs.map(function(p){return'<option>'+p+'</option>';}).join('');
+  document.getElementById('fProgramFilter').innerHTML='<option value="">All programs</option>'+programs.map(function(p){return'<option>'+p+'</option>';}).join('');
   document.getElementById('fMonitor').innerHTML='<option value="">All monitor years</option>'+monitors.map(function(m){return'<option>'+m+'</option>';}).join('');
 }
 
@@ -741,7 +741,7 @@ function renderList(){
   var q=(document.getElementById('search').value||'').toLowerCase();
   var school=document.getElementById('fSchool').value;
   var grade=document.getElementById('fGrade').value;
-  var program=document.getElementById('fProgram').value;
+  var program=document.getElementById('fProgramFilter').value;
   var monitor=document.getElementById('fMonitor').value;
   var status=document.getElementById('fStatus').value;
   var list=students.map(function(s,i){return{s:s,i:i};});
@@ -881,11 +881,11 @@ function buildCard(cat,s,si){
     bc=bStat([d.meetingHeld,d.formCompleted,d.formSubmitted,d.parentNotified,d.docsUploaded]);
     body='<div class="outcome-wrap">'+
       '<div class="outcome-label">EOY LPAC Outcome</div>'+
-      '<select class="outcome-select" onchange="updField('+si+','lpac','outcome',this.value)">'+
-        EOY_OUTCOMES.map(function(o){return'<option value="'+o+'" '+(d.outcome===o?'selected':'')+'>'+( o||'Select outcome…')+'</option>';}).join('')+
+      '<select class="outcome-select" onchange="updField('+si+',\'lpac\',\'outcome\',this.value)">'+
+        EOY_OUTCOMES.map(function(o){return'<option value="'+o+'" '+(d.outcome===o?'selected':'')+'>'+( o||'Select outcome...')+'</option>';}).join('')+
       '</select>'+
     '</div>'+
-    '<div class="frow"><label>Meeting date</label><input type="date" value="'+(d.meetingDate||'')+'" onchange="updField('+si+','lpac','meetingDate',this.value)"/></div>'+
+    '<div class="frow"><label>Meeting date</label><input type="date" value="'+(d.meetingDate||'')+'" onchange="updField('+si+',\'lpac\',\'meetingDate\',this.value)"/></div>'+
     '<div class="workflow">'+
       wfStep(1,'LPAC Meeting Held',d.meetingHeld,d.meetingHeldAt,si,'lpac','meetingHeld')+
       wfStep(2,'Form Completed in Project ELL',d.formCompleted,d.formCompletedAt,si,'lpac','formCompleted')+
