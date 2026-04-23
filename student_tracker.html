@@ -1023,8 +1023,7 @@ function runExport(){
   if(!cat||cat==='changeProgram'){catCols=catCols.concat(['Program Letter Received','Program Letter Uploaded']);}
   if(!cat||cat==='iowa'){catCols=catCols.concat(['Iowa Qualifies','Iowa Completed','Iowa Results Uploaded']);}
   if(!cat||cat==='eng1'){catCols=catCols.concat(['Eng1 Qualifies','Eng1 Taken','Eng1 Uploaded']);}
-  var Q='"';var NL='
-';
+  var Q='"';var NL='\n';
   var rows=list.map(function(s){
     var lp=s.data.lpac||{},te=s.data.teacherEval||{},rc=s.data.reclass||{},cp=s.data.changeProgram||{},iw=s.data.iowa||{},e1=s.data.eng1||{};
     var st=getStatus(s)==='complete'?'Complete':getStatus(s)==='partial'?'In Progress':'Not Started';
