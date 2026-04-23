@@ -939,7 +939,7 @@ function wfStep(num,label,checked,ts,si,cat,field){
   return'<div class="wf-step'+cls+'">'+
     '<div class="wf-num">'+num+'</div>'+
     '<div class="wf-content">'+
-      '<label class="wf-check"><input type="checkbox"'+(checked?' checked':'')+' onchange="togF('+si+',''+cat+'',''+field+'',this.checked)"/><span class="wf-label">'+label+'</span></label>'+
+      '<label class="wf-check"><input type="checkbox"'+(checked?' checked':'')+' onchange="togF('+si+',\''+cat+'\',\''+field+'\',this.checked)"/><span class="wf-label">'+label+'</span></label>'+
       (ts?'<div class="wf-date">'+fd(ts)+'</div>':'')+
     '</div>'+
   '</div>';
