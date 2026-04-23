@@ -618,7 +618,7 @@ async function processFile(file){
     var cLangDesc=findCol(headers,['student language desc','lang desc']);
     rows.slice(1).forEach(function(r){
       var school=(cSchool>=0?r[cSchool]:'').toString().trim();
-      if(!MY_CAMPUSES.includes(school))return;
+      if(!MY_CAMPUSES.some(function(c){return c.trim().toLowerCase()===school.trim().toLowerCase();}))return;
       var id=(cId>=0?r[cId]:'').toString().trim();
       if(!id)return;
       parsed.push({id:id,last:(cLast>=0?r[cLast]:'').toString().trim(),first:(cFirst>=0?r[cFirst]:'').toString().trim(),grade:normGrade((cGrade>=0?r[cGrade]:'').toString()),school:school,program:(cProg>=0?r[cProg]:'').toString().trim(),parentalPermission:(cPerm>=0?r[cPerm]:'').toString().trim(),altLangProg:(cAlt>=0?r[cAlt]:'').toString().trim(),programType:(cType>=0?r[cType]:'').toString().trim(),yearsUS:(cYears>=0?r[cYears]:'').toString().trim(),specEd:(cSpec>=0?r[cSpec]:'').toString().trim(),homeLang:(cLang>=0?r[cLang]:'').toString().trim(),langDesc:(cLangDesc>=0?r[cLangDesc]:'').toString().trim(),monitorYear:''});
@@ -634,7 +634,7 @@ async function processFile(file){
     var cMonitor=findCol(headers,['monitor year']);
     rows.slice(1).forEach(function(r){
       var school=(cSchoolM>=0?r[cSchoolM]:'').toString().trim();
-      if(!MY_CAMPUSES.includes(school))return;
+      if(!MY_CAMPUSES.some(function(c){return c.trim().toLowerCase()===school.trim().toLowerCase();}))return;
       var id=(cIdM>=0?r[cIdM]:'').toString().trim();
       if(!id)return;
       var fullName=(cNameM>=0?r[cNameM]:'').toString().trim();
@@ -680,6 +680,7 @@ async function confirmImport(){
   processedFiles.forEach(function(r){allStudents=allStudents.concat(r.students);});
   var added=0,updated=0,skipped=0;
   allStudents.forEach(function(imp){
+    if(!imp.school)return;
     var existIdx=students.findIndex(function(s){return s.id&&s.id===imp.id;});
     if(existIdx>=0){
       var s=students[existIdx];
@@ -723,7 +724,17 @@ function populateFilters(){
   var grades=[...new Set(students.map(function(s){return s.grade;}).filter(Boolean))].sort();
   var programs=[...new Set(students.map(function(s){return s.program;}).filter(Boolean))].sort();
   var monitors=[...new Set(students.map(function(s){return s.monitorYear;}).filter(Boolean))].sort();
-  document.getElementById('fSchool').innerHTML='<option value="">All campuses</option>'+schools.map(function(s){return'<option>'+s+'</option>';}).join('');
+  var groupOpts='<option value="">All campuses</option>'+
+    '<optgroup label="By School">'+
+    '<option value="__orem__">Orem (ES + MS)</option>'+
+    '<option value="__pearland__">Pearland (ES + MS)</option>'+
+    '<option value="__windmill__">Windmill Lakes (ES + MS)</option>'+
+    '<option value="ILTexas - WM Lakes Orem HS">High School</option>'+
+    '</optgroup>'+
+    '<optgroup label="By Campus">'+
+    schools.map(function(s){return'<option>'+s+'</option>';}).join('')+
+    '</optgroup>';
+  document.getElementById('fSchool').innerHTML=groupOpts;
   document.getElementById('fGrade').innerHTML='<option value="">All grades</option>'+grades.map(function(g){return'<option value="'+g+'">'+gl(g)+'</option>';}).join('');
   document.getElementById('fProgramFilter').innerHTML='<option value="">All programs</option>'+'<option value="__denial__">Denial</option>'+programs.map(function(p){return'<option>'+p+'</option>';}).join('');
   document.getElementById('fMonitor').innerHTML='<option value="">All monitor years</option>'+monitors.map(function(m){return'<option>'+m+'</option>';}).join('');
@@ -754,7 +765,12 @@ function renderList(){
   var status=document.getElementById('fStatus').value;
   var list=students.map(function(s,i){return{s:s,i:i};});
   if(q)list=list.filter(function(x){return(x.s.last+' '+x.s.first+' '+x.s.id).toLowerCase().includes(q);});
-  if(school)list=list.filter(function(x){return x.s.school===school;});
+  if(school){
+    if(school==='__orem__') list=list.filter(function(x){return x.s.school==='ILTexas - Orem ES'||x.s.school==='ILTexas - Orem MS';});
+    else if(school==='__pearland__') list=list.filter(function(x){return x.s.school==='ILTexas - Pearland ES'||x.s.school==='ILTexas - Pearland MS';});
+    else if(school==='__windmill__') list=list.filter(function(x){return x.s.school==='ILTexas - Windmill Lakes ES'||x.s.school==='ILTexas - Windmill Lakes MS';});
+    else list=list.filter(function(x){return x.s.school===school;});
+  }
   if(grade)list=list.filter(function(x){return x.s.grade===grade;});
   if(program){
     if(program==='__denial__'){
