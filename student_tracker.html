@@ -720,7 +720,7 @@ function populateFilters(){
   var monitors=[...new Set(students.map(function(s){return s.monitorYear;}).filter(Boolean))].sort();
   document.getElementById('fSchool').innerHTML='<option value="">All campuses</option>'+schools.map(function(s){return'<option>'+s+'</option>';}).join('');
   document.getElementById('fGrade').innerHTML='<option value="">All grades</option>'+grades.map(function(g){return'<option value="'+g+'">'+gl(g)+'</option>';}).join('');
-  document.getElementById('fProgramFilter').innerHTML='<option value="">All programs</option>'+programs.map(function(p){return'<option>'+p+'</option>';}).join('');
+  document.getElementById('fProgramFilter').innerHTML='<option value="">All programs</option>'+'<option value="__denial__">Denial</option>'+programs.map(function(p){return'<option>'+p+'</option>';}).join('');
   document.getElementById('fMonitor').innerHTML='<option value="">All monitor years</option>'+monitors.map(function(m){return'<option>'+m+'</option>';}).join('');
 }
 
@@ -751,7 +751,13 @@ function renderList(){
   if(q)list=list.filter(function(x){return(x.s.last+' '+x.s.first+' '+x.s.id).toLowerCase().includes(q);});
   if(school)list=list.filter(function(x){return x.s.school===school;});
   if(grade)list=list.filter(function(x){return x.s.grade===grade;});
-  if(program)list=list.filter(function(x){return x.s.program===program;});
+  if(program){
+    if(program==='__denial__'){
+      list=list.filter(function(x){return(x.s.parentalPermission||'').toUpperCase().includes('DENIED');});
+    } else {
+      list=list.filter(function(x){return x.s.program===program;});
+    }
+  }
   if(monitor)list=list.filter(function(x){return x.s.monitorYear===monitor;});
   if(status)list=list.filter(function(x){return getStatus(x.s)===status;});
   filteredList=list;
