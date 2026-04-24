@@ -398,7 +398,7 @@ function loadConfig(){
 function saveConfig(cfg){localStorage.setItem('eb_tracker_config',JSON.stringify(cfg));}
 
 var _cfg=loadConfig()||{};
-var SHEET_ID=_cfg.sheetId||'';
+var SHEET_ID=_cfg.sheetId||'1RZdud1PWiIt5NIWQ8TAO7UbKBk2_vdD_gAdkUy0EkFU';
 var SA_EMAIL=_cfg.saEmail||"student-tracker@student-tracker-eoy.iam.gserviceaccount.com";
 var SA_KEY=_cfg.saKey||"-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDLRRCGy4GkHsRZ\nDbFhJncY3/4vdxDfBzNU6kDeRYZoi3VGQMPOANlX+g8W9PNP+czh8vPVViu6edav\nUNYXkzXgvDka50ldRAA3PuTaez3v9iP6G18/M+3OOJcE4EMXkVluAJK/9REPmOvt\nyOQLZk6ACKe05MGypjIxPbwgTP5K7ua4ubOlwj6mZve7NAEtU39qdeJJ1OXE6c9k\nTPVTB9rtnZ+5sH1Dajb+WEO/EHNzfmdgv6mTKaSkw2tOZV3zTWlLxexe5lXqBDQG\nTyjorAtiofr8B1LjulXfUBqZGroApEJlG9ZcCS22fjN3aRFZu0Mi2mv+80Wpe7yQ\nD+4XUDBBAgMBAAECggEAH490HvG3CcPrKYaKPXLK+BZDMZxzhqVoD22lr70svsu0\nZDmHDVOta078i8xxgL/g0041FLEh7fyf3C2ZaCSnr2KaHTa++demju1ZfCC5f6oA\ncQNR+Q63hBbeP9gQIrcjIwS8xEgpI3pTW2KfIbP7ST7OxzPjbTkHvwR+UqeRrhF9\n1Xkaf6IbHw/YYTkAxFF96idzh5Sp3IPKlbDscE6FcL72W9EaO7ZWydFPWH+xZpd8\nkDOIk4HwhGn4PRoDLd8Rajs5kg3/faT0YHrcFNdD+T8qJtN7f61y/IvYbY8oLlqe\nTZ1Pc+jctZ52U9qDpZrInPm/QL7d2PVoqOUQmi+b1wKBgQDxtxN6gNOnLO0ofL9N\naMLdAkugu+zIUmZAKY5EzqMKYlSmHkMIEkTpDsVosqfNc1leX4WmuJ3I82/IPg7z\nt3dwjKNO6ILd4K3Wg8ePpW2ZbocRKQFlqZ5FKJFrQWYudQaBRbFjSmHfMTS/Wehv\nCWAROiwyaoufkE1YaUMxJjZkuwKBgQDXSFifZRiWXQKFqpPMYJde+oCu8UpVzDzc\nl5rFxTDBashjMLGZJekgF9mSbvDiUssG38nfdGcM+1ffUQnwUZd4iBKH/siRKoxE\nSkgvant/L8PUc9H0JDxTr5D8N3mhaGZAN6ptAA9SSEX4cNtBPKitdKQBPMzSPkiU\nBT7LRpvtMwKBgQDcgRDp7mAm39sx1iuGaI1rpM5tQUKOtGzHF6HLr14Y+P8T1AN+\nd3wZx/nauzBNQm9Coo2APGbkjP9qgwKM3s+9Au9v6riHxJGRYgJJTrafA69/vhKi\nNYxGtu2CFNUsiGF4yKU8WPzT6UWfUlux/7F9xb3P+FaLJ88HWm+LhLqWRQKBgEHo\nhDlIWh6umvcRIe6QI8eQKZVlibx6qqdeQqQJmsOcTX0Qi063rIeGxbVvAZBIiJ+y\nI7ulh2cSC/Tyenh4gkcEYagA+KZ4wDioBTF/CBAIL4v7aWu1LELynRCaa0JfE+7V\nG/gC7K3kMoe9BWMTjxCLhSpb0tkK+G1YrcDN/S7BAoGAZFxtpcPS4Y2A1cndZ0wi\nVujwUmk0U/RdaQL7mnAdQZUYisk8NKTNd44tQPGYGhBl/3a6z2O6BQbIQBIw3+1S\ntYNWjYPC6+qw3l0sUo43jWE2CKyHi3iEEZ7idMEMS4AO5tI5vERs19TMoUkqgqP/\nBdaLZbcTmvY6hrjqboosjdE=\n-----END PRIVATE KEY-----\n";
 const SA_TOKEN_URI = "https://oauth2.googleapis.com/token";
@@ -1144,7 +1144,7 @@ function openSettings(){
   var cfg=loadConfig()||{};
   document.getElementById('cfgSheetId').value=cfg.sheetId||SHEET_ID||'';
   document.getElementById('cfgSaEmail').value=cfg.saEmail||SA_EMAIL||'';
-  document.getElementById('cfgSaKey').value=cfg.saKey||'';
+  document.getElementById('cfgSaKey').value=cfg.saKey||SA_KEY||'';
   document.getElementById('cfgCampuses').value=(cfg.campuses||MY_CAMPUSES).join('\n');
   document.getElementById('settingsModal').classList.add('open');
 }
@@ -1174,10 +1174,11 @@ function buildCampusGroups(campuses){
 }
 
 function saveSettings(){
-  var sheetId=document.getElementById('cfgSheetId').value.trim();
-  var saEmail=document.getElementById('cfgSaEmail').value.trim();
-  var saKeyRaw=document.getElementById('cfgSaKey').value.trim();
+  var sheetId=document.getElementById('cfgSheetId').value.trim()||SHEET_ID;
+  var saEmail=document.getElementById('cfgSaEmail').value.trim()||SA_EMAIL;
+  var saKeyRaw=document.getElementById('cfgSaKey').value.trim()||SA_KEY;
   var campusesRaw=document.getElementById('cfgCampuses').value.trim();
+  if(!campusesRaw) campusesRaw=MY_CAMPUSES.join('\n');
 
   if(!sheetId||!saEmail||!saKeyRaw||!campusesRaw){
     showToast('Please fill in all required fields','error');return;
@@ -1210,14 +1211,7 @@ function resetSettings(){
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 async function init(){
-  var cfg=loadConfig();
-  if(!cfg||!cfg.sheetId){
-    // First time - show welcome + settings
-    setSS('error','Setup required');
-    document.getElementById('statsRow').innerHTML='<div style="grid-column:1/-1;background:var(--blue-bg);border:1px solid var(--blue-border);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;font-size:13px;color:var(--blue)"><strong>Welcome to EB Student Tracker!</strong> Click <strong>⚙ Settings</strong> in the top right to configure your Google Sheet and campuses before getting started.</div>';
-    openSettings();
-    return;
-  }
+  // Always connect using saved config or built-in defaults
   setSS('syncing','Setting up…');
   try{await ensureSheets();await load();}
   catch(e){setSS('error','Setup failed');console.error(e);}
